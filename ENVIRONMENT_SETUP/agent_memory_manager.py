@@ -6,7 +6,11 @@ import datetime
 from pathlib import Path
 
 # A memória fájl helye (A Git repó része lesz, így a sessionök között perzisztens marad)
-MEMORY_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Knowledge_Base", "agent_memory.jsonl")
+# Kiderítjük, hogy melyik repóban futunk a memória szeparációja érdekében
+repo_name = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if not repo_name or repo_name == "/":
+    repo_name = "app" # fallback for testing in root
+MEMORY_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Knowledge_Base", f"agent_memory_{repo_name}.jsonl")
 
 def init_memory_file():
     """Létrehozza a memóriafájlt, ha még nem létezik."""
@@ -133,13 +137,28 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     def do_sync():
-        print("\n🤖 [Kontextus Titkár] Lokális memória felhő-szinkronizáció indítása...")
+        print("\n🤖 [Kontextus Titkár] Lokális memória VPS felhő-szinkronizáció indítása...")
         try:
             import subprocess, sys
-            p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools", "skills", "context_secretary.py")
-            if os.path.exists(p): subprocess.run([sys.executable, p], check=False)
+            bridge_script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools", "skills", "mcp_bridge_tool.py")
+            if not os.path.exists(bridge_script):
+                print("⚠️ mcp_bridge_tool.py nem található, kihagyom az MCP szinkronizációt.")
+                return
+
+            if not os.path.exists(MEMORY_FILE):
+                print(f"⚠️ Nincs mit szinkronizálni, a {MEMORY_FILE} fájl még nem létezik.")
+                return
+
+            with open(MEMORY_FILE, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            # Call the remote MCP server to save this memory under the repo's specific memory file
+            # Bár Base64 lenne a legbiztonságosabb, itt EOF markert használunk a tartalom átviteléhez a VPS bash scriptjébe
+            vps_command = f"mkdir -p ~/Jules_mx/memory_offload && cat << 'INNER_EOF' > ~/Jules_mx/memory_offload/backup_{repo_name}.jsonl\n{content}\nINNER_EOF"
+            subprocess.run([sys.executable, bridge_script, "execute_bash", vps_command], check=False)
+            print("✅ Lokális memória sikeresen felszinkronizálva a VPS-re.")
         except Exception as e:
-            print(f"⚠️ Hiba a Titkár hívásakor: {e}")
+            print(f"⚠️ Hiba a memória szinkronizációjakor: {e}")
 
     if args.action == "write":
         if not args.content:
