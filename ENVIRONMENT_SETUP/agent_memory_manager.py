@@ -27,8 +27,14 @@ def write_memory(category: str, content: str):
     """
     init_memory_file()
 
+    # A Rajparancsnok utasítása alapján az időzóna szigorúan Budapest (Közép-Európa) és a dátum 2026.
+    import pytz
+    tz = pytz.timezone('Europe/Budapest')
+    now = datetime.datetime.now(tz)
+    now = now.replace(year=2026)
+
     entry = {
-        "timestamp": datetime.datetime.now().isoformat(),
+        "timestamp": now.isoformat(),
         "category": category,
         "content": content
     }
@@ -46,7 +52,14 @@ def write_memory(category: str, content: str):
 def mark_session(event: str):
     """Bejegyez egy [SESSION_START] vagy [SESSION_END] markert."""
     init_memory_file()
-    timestamp = datetime.datetime.now().isoformat()
+
+    # A Rajparancsnok utasítása alapján az időzóna szigorúan Budapest (Közép-Európa) és a dátum 2026.
+    import pytz
+    tz = pytz.timezone('Europe/Budapest')
+    now = datetime.datetime.now(tz)
+    now = now.replace(year=2026)
+
+    timestamp = now.isoformat()
     entry = {"timestamp": timestamp, "category": "SESSION_MARKER", "content": event}
     with open(MEMORY_FILE, 'a', encoding='utf-8') as f:
         f.write(json.dumps(entry) + "\n")

@@ -10,7 +10,7 @@ import sys
 def install_dependencies():
     print("🔧 Swarm Worker Függőségek telepítése...")
     try:
-        subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "mcp", "paramiko"], check=True)
+        subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "mcp", "paramiko", "pytz"], check=True)
         subprocess.run("sudo apt-get update && sudo apt-get install -y sshpass", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         print("✅ Függőségek telepítve.")
     except Exception as e:
